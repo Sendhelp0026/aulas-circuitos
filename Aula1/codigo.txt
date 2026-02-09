@@ -1,0 +1,15 @@
+#define p 4
+bool num = false;
+void setup(){
+pinMode(p, OUTPUT);
+}
+void loop(){
+delay(1000);
+  if (num == false){
+   digitalWrite(p, LOW);
+   num = true;
+   }
+  else{digitalWrite(p, HIGH);
+   num = false;
+  }
+}
