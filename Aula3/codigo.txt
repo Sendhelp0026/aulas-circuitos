@@ -1,0 +1,58 @@
+#include <Arduino.h>
+
+static const int LED_PIN = 2;
+static const int BTN_PIN = 4;
+
+// Estado do "modo" (muda a velocidade da tarefa do LED)
+static bool fastMode = false;
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(LED_PIN, OUTPUT);
+  pinMode(BTN_PIN, INPUT_PULLUP);
+}
+
+// "Task" A: LED periódico (200ms ou 80ms)
+void led_timing(bool mode, unsigned long now) {
+  static unsigned long lastLed = 0;
+  unsigned long ledPeriod = mode ? 80 : 200;
+
+  if (now - lastLed >= ledPeriod) {
+    lastLed = now;
+    digitalWrite(LED_PIN, !digitalRead(LED_PIN)); // Flip the LED state
+  }
+}
+
+// "Task" B: log a cada 1000ms
+void log_alive(unsigned long now) {
+  static unsigned long lastLog = 0;
+
+  if (now - lastLog >= 1000) {
+    lastLog = now;
+    Serial.printf("[log] mode = %s\n", fastMode ? "FAST" : "NORMAL");
+  }
+}
+
+// "Task" C: polling do botão (com debounce)
+void button_press() {
+  static unsigned long lastButtonPress = 0;
+  
+  if (digitalRead(BTN_PIN) == LOW && (millis() - lastButtonPress > 200)) { // Debounce delay
+    fastMode = !fastMode;
+    Serial.printf("[log] mode = %s\n", fastMode ? "FAST" : "NORMAL");
+    lastButtonPress = millis(); // Update the last button press time
+    
+    // Wait for button release to avoid multiple toggles
+    while (digitalRead(BTN_PIN) == LOW) {
+      delay(10); // Short delay to avoid too much CPU usage
+    }
+  }
+}
+
+void loop() {
+  unsigned long now = millis();
+
+  button_press();
+  led_timing(fastMode, now);
+  log_alive(now);
+}
